@@ -1,175 +1,199 @@
 package com.bank.system.services;
 
 import com.bank.system.enums.TransactionType;
-import com.bank.system.exceptions.*;
+import com.bank.system.exceptions.InvalidAmountException;
 import com.bank.system.models.Account;
 import com.bank.system.models.Transaction;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
+
 import java.util.stream.Collectors;
 
 
 public class TransactionManager {
     private final List<Transaction> allTransactions;
-
     private final AccountManager accountManager;
-    private AtomicInteger transactionCounter = new AtomicInteger(1);
 
     public TransactionManager(AccountManager accountManager) {
         this.accountManager = accountManager;
         this.allTransactions = Collections.synchronizedList(new ArrayList<>());
-
     }
 
-    // Method to add a transaction
-    public boolean addTransaction(Transaction transaction) {
+    public void addTransaction(Transaction transaction) {
         if (transaction == null) {
-            return false;
+            return;
         }
         allTransactions.add(transaction);
-        return true;
     }
 
-    // Method to get the number of transactions
     public int getTransactionCount() {
-        return transactionCount;
+        return allTransactions.size();
     }
 
-
-    public boolean deposit(String accountNumber, double amount) throws InvalidAmountException {
-        Account account = accountManager.getAccount(accountNumber);
-        if (account == null) {
-            throw new InvalidAmountException("Account not found: " + accountNumber);
-        }
-
-        if (amount <= 0) {
-            throw new InvalidAmountException("Deposit amount must be greater than 0");
-        }
-
+    public synchronized boolean deposit(String accountNumber, double amount) throws InvalidAmountException {
+        Account account = fetchAccount(accountNumber);
+        validateAmount(amount, "Deposit");
         boolean success = account.processTransaction(amount, TransactionType.DEPOSIT);
-        double newBalance = account.getBalance();
-
-        // Create and record the transaction
-        if(success) {
-            Transaction transaction = createTransaction(accountNumber, TransactionType.DEPOSIT, amount, newBalance);
-            allTransactions.add(transaction);
-
-            return true;
-        }
-        return false;
-
-    }
-
-    public boolean withdraw(String accountNumber, double amount) throws InvalidAmountException {
-        Account account = accountManager.getAccount(accountNumber);
-        if (account == null) {
-            throw new InvalidAmountException("Account not found: " + accountNumber);
-        }
-
-        if (amount <= 0) {
-            throw new InvalidAmountException("Withdrawal amount must be greater than 0");
-        }
-
-        boolean success = account.processTransaction(amount, TransactionType.WITHDRAWAL);
-        double newBalance = account.getBalance();
-
         if (success) {
-            // Create and record the transaction
+            recordTransaction(account, TransactionType.DEPOSIT, amount);
+        }
+        return success;
+    }
 
-            Transaction transaction = createTransaction(accountNumber, TransactionType.WITHDRAWAL, amount, newBalance);
-            allTransactions.add(transaction);
+    public synchronized boolean withdraw(String accountNumber, double amount) throws InvalidAmountException {
+        Account account = fetchAccount(accountNumber);
+        validateAmount(amount, "Withdrawal");
+        boolean success = account.processTransaction(amount, TransactionType.WITHDRAWAL);
+        if (success) {
+            recordTransaction(account, TransactionType.WITHDRAWAL, amount);
+        }
+        return success;
+    }
 
+   public boolean transfer(String fromAccountNumber, String toAccountNumber, double amount)
+        throws InvalidAmountException {
+    if (fromAccountNumber == null || toAccountNumber == null) {
+        throw new IllegalArgumentException("Account numbers must not be null");
+    }
+    if (fromAccountNumber.equals(toAccountNumber)) {
+        throw new IllegalArgumentException("Cannot transfer to the same account");
+    }
+
+    validateAmount(amount, "Transfer");
+    Account fromAccount = fetchAccount(fromAccountNumber);
+    Account toAccount = fetchAccount(toAccountNumber);
+
+    Account firstLock = fromAccount;
+    Account secondLock = toAccount;
+    if (fromAccount.getAccountNumber().compareTo(toAccount.getAccountNumber()) > 0) {
+        firstLock = toAccount;
+        secondLock = fromAccount;
+    }
+
+    synchronized (firstLock) {
+        synchronized (secondLock) {
+            boolean withdrawalSuccess = fromAccount.processTransaction(amount, TransactionType.WITHDRAWAL);
+            if (!withdrawalSuccess) {
+                return false;
+            }
+
+            boolean depositSuccess = toAccount.processTransaction(amount, TransactionType.DEPOSIT);
+            if (!depositSuccess) {
+                // rollback withdrawal
+                fromAccount.processTransaction(amount, TransactionType.DEPOSIT);
+                return false;
+            }
+
+            recordTransaction(fromAccount, TransactionType.TRANSFER, amount);
+            recordTransaction(toAccount, TransactionType.RECEIVE, amount);
             return true;
         }
-        return false;
-
     }
-
-    public boolean transfer(String fromAccountNumber, String toAccountNumber, double amount)
-            throws InvalidAmountException {
-        Account fromAccount = accountManager.getAccount(fromAccountNumber);
-        Account toAccount = accountManager.getAccount(toAccountNumber);
-
-        if (fromAccount == null) {
-            throw new InvalidAmountException("Source account not found: " + fromAccountNumber);
-        }
-
-        if (toAccount == null) {
-            throw new InvalidAmountException("Destination account not found: " + toAccountNumber);
-        }
-
-        if (amount <= 0) {
-            throw new InvalidAmountException("Transfer amount must be greater than 0");
-        }
-
-        // Perform withdrawal from source account
-        boolean fromSuccess =  fromAccount.processTransaction(amount, TransactionType.WITHDRAWAL);
-        double newFromBalance = fromAccount.getBalance();
-
-        // Perform deposit to destination account
-
-        boolean toSuccess = toAccount.processTransaction(amount, TransactionType.DEPOSIT);
-        double newToBalance = toAccount.getBalance();
-
-        // Record withdrawal transaction
-        if(fromSuccess) {
-            Transaction withdrawalTransaction = createTransaction(fromAccountNumber, TransactionType.TRANSFER, amount, newFromBalance);
-            allTransactions.add(withdrawalTransaction);
-
-        }
-        // Record deposit transaction
-        if (toSuccess) {
-            Transaction depositTransaction = createTransaction(toAccountNumber, TransactionType.RECEIVE, amount, newToBalance);
-            allTransactions.add(depositTransaction);
-
-        }
-        return true;
-    }
+}
     public List<Transaction> getTransactionsForAccount(String accountNumber) {
-        List<Transaction> accountTransactions = new ArrayList<>();
-        for (Transaction transaction : allTransactions) {
-            if (isMatchingAccount(transaction, accountNumber)) {
-                accountTransactions.add(transaction);
-            }
-        }
-        return accountTransactions;
+        return allTransactions.stream()
+                .filter(t -> isMatchingAccount(t, accountNumber))
+                .collect(Collectors.toList());
     }
 
     public List<Transaction> getAllTransactions() {
-        return new ArrayList<>(allTransactions);
+        synchronized (allTransactions) {
+            return new ArrayList<>(allTransactions);
+        }
     }
 
     public int getTotalTransactions() {
         return allTransactions.size();
     }
+
     public void removeTransaction(String transactionId) {
         allTransactions.removeIf(transaction -> transaction.getTransactionId().equals(transactionId));
     }
+
     public Transaction getLastTransaction(String accountNumber) {
-        if (allTransactions.isEmpty()) return null;
-        for (int i = allTransactions.size() - 1; i >= 0; i--) {
-            Transaction transaction = allTransactions.get(i);
-            if (isMatchingAccount(transaction, accountNumber)) {
-                return transaction;
+        synchronized (allTransactions) {
+            for (int i = allTransactions.size() - 1; i >= 0; i--) {
+                Transaction transaction = allTransactions.get(i);
+                if (isMatchingAccount(transaction, accountNumber)) {
+                    return transaction;
+                }
             }
         }
         return null;
     }
 
-
     private boolean isMatchingAccount(Transaction transaction, String accountNumber) {
         return transaction != null && accountNumber.equals(transaction.getAccountNumber());
     }
 
-
+    private void recordTransaction(Account account, TransactionType type, double amount) {
+        Transaction transaction = createTransaction(account.getAccountNumber(), type, amount, account.getBalance());
+        allTransactions.add(transaction);
+    }
 
     private Transaction createTransaction(String accountNumber, TransactionType type, double amount, double balanceAfter) {
         return new Transaction(accountNumber, type.name(), amount, balanceAfter);
     }
 
+    public List<Transaction> getTransactionsByAccount(String accountNumber) {
+        return getTransactionsForAccount(accountNumber);
+    }
+
+    public List<Transaction> getTransactionsByType(String type) {
+        return allTransactions.stream()
+                .filter(t -> t.getType().equalsIgnoreCase(type))
+                .collect(Collectors.toList());
+    }
+
+    public List<Transaction> getTransactionsSortedByAmount() {
+        return allTransactions.stream()
+                .sorted((t1, t2) -> Double.compare(t2.getAmount(), t1.getAmount()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Transaction> getTransactionsSortedByDate() {
+        return allTransactions.stream()
+                .sorted((t1, t2) -> t2.getTimestamp().compareTo(t1.getTimestamp()))
+                .collect(Collectors.toList());
+    }
+
+    public double getTotalDeposits() {
+        return allTransactions.stream()
+                .filter(t -> "DEPOSIT".equals(t.getType()) || "RECEIVE".equals(t.getType()))
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+    }
+
+    public double getTotalWithdrawals() {
+        return allTransactions.stream()
+                .filter(t -> "WITHDRAWAL".equals(t.getType()) || "TRANSFER".equals(t.getType()))
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+    }
+
+    private void validateAmount(double amount, String context) throws InvalidAmountException {
+        if (amount <= 0) {
+            throw new InvalidAmountException(context + " amount must be greater than 0");
+        }
+    }
+
+    private Account fetchAccount(String accountNumber) throws InvalidAmountException {
+        Account account = accountManager.getAccount(accountNumber);
+        if (account == null) {
+            throw new InvalidAmountException("Account not found: " + accountNumber);
+        }
+        return account;
+    }
+
+    public void setTransactions(List<Transaction> transactions) {
+        synchronized (allTransactions) {
+            allTransactions.clear();
+            if (transactions != null) {
+                allTransactions.addAll(transactions);
+            }
+        }
+    }
 }
+
