@@ -36,12 +36,19 @@ public abstract class Account implements Transactable {
 
     public abstract String getAccountType();
 
-    // Deposit method - common for all account types
+
 
     // Abstract methods to be implemented by subclasses
     public abstract boolean withdraw(double amount) throws InsufficientFundsException, InvalidAmountException, OverdraftExceededException;
-    public abstract boolean deposit(double amount) throws InvalidAmountException;
 
+    public boolean deposit(double amount) throws InvalidAmountException {
+
+        if (amount <= 0) {
+            throw new InvalidAmountException("Deposit amount must be greater than 0");
+        }
+        setBalance(getBalance() + amount);
+        return true;
+    }
     // Withdraw method - to be overridden by subclasses
 
     // Getters and setters

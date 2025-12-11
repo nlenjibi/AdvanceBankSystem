@@ -53,15 +53,7 @@ public class CheckingAccount extends Account {
         setBalance(getBalance() - amount);
         return true;
     }
-    @Override
-    public boolean deposit(double amount) throws InvalidAmountException {
 
-        if (amount <= 0) {
-            throw new InvalidAmountException("Deposit amount must be greater than 0");
-        }
-        setBalance(getBalance() + amount);
-        return true;
-    }
 
     // Getters
     public double getOverdraftLimit() {

@@ -244,6 +244,7 @@ public class Main {
         };
     }
 
+
     public void displayWelcomeMessage() {
         print("\nWelcome to the Bank Account Management System!");
         print("Please select an option from the menu below:");
