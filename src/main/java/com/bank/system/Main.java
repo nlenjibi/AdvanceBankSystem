@@ -74,6 +74,22 @@ public class Main {
             default -> true;
         };
     }
+    public void displayWelcomeMessage() {
+        print("\nWelcome to the Bank Account Management System!");
+        print("Please select an option from the menu below:");
+    }
+
+    private void displayMainMenu() {
+        printHeader("BANK ACCOUNT MANAGEMENT SYSTEM - MAIN MENU");
+        print("BANK ACCOUNT MANAGEMENT - MAIN MENU");
+        print(" ");
+        print("1. Manage Accounts");
+        print("2. Perform Transactions");
+        print("3. Generate Account Statements");
+        print("4. Run Tests");
+        print("5. Exit");
+        print("");
+    }
     private void manageAccounts() {
         boolean running = true;
         while (running) {
@@ -242,24 +258,47 @@ public class Main {
             default -> null;
         };
     }
+    private static void saveLoadData() {
+        boolean backToMain = false;
+        while (!backToMain) {
+            System.out.println("\n--- Save/Load Data ---");
+            System.out.println("1. Save All Data to Files");
+            System.out.println("2. Load Data from Files");
+            System.out.println("3. Back to Main Menu");
+            System.out.print("Enter your choice: ");
 
+            int choice = getChoice();
 
-    public void displayWelcomeMessage() {
-        print("\nWelcome to the Bank Account Management System!");
-        print("Please select an option from the menu below:");
+            switch (choice) {
+                case 1:
+                    saveDataToFiles();
+                    break;
+                case 2:
+                    loadDataFromFiles();
+                    break;
+                case 3:
+                    backToMain = true;
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
     }
 
-    private void displayMainMenu() {
-        printHeader("BANK ACCOUNT MANAGEMENT SYSTEM - MAIN MENU");
-        print("BANK ACCOUNT MANAGEMENT - MAIN MENU");
-        print(" ");
-        print("1. Manage Accounts");
-        print("2. Perform Transactions");
-        print("3. Generate Account Statements");
-        print("4. Run Tests");
-        print("5. Exit");
-        print("");
+    private static void saveDataToFiles() {
+        System.out.println("\nSAVING ACCOUNT DATA");
+        filePersistenceService.saveAccounts(accountManager.getAccountsMap());
+        filePersistenceService.saveTransactions(transactionManager.getAllTransactions());
+        System.out.println("File save completed successfully.");
     }
+
+    private static void runConcurrentSimulation() {
+        System.out.println("\nRunning concurrent transaction simulation...");
+        ConcurrencyUtils.runConcurrentSimulation(accountManager, transactionManager, 5);
+    }
+
+
+
 
     private void shutdown() {
         print("\nThank you for using Bank Account Management System!");
