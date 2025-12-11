@@ -98,7 +98,7 @@ public class TransactionProcessHandler {
                 "Error: Invalid account number format. Please use format ACC###"
         );
 
-        if (!accountManager.accountExists(toAccountNumber)) {
+        if (accountManager.accountExists(toAccountNumber)) {
             print("Error: Destination account not found. Please check the account number and try again.");
             pressEnterToContinue();
             return;
@@ -204,7 +204,7 @@ public class TransactionProcessHandler {
             if (transactions == null || transactions.isEmpty()) {
                 return;
             }
-            Transaction latest = transactions.get(transactions.size() - 1);
+            Transaction latest = transactions.getLast();
             if (latest != null && accountNumber.equals(latest.getAccountNumber())) {
                 this.latestTransactionId = latest.getTransactionId();
             }

@@ -144,7 +144,7 @@ public class AccountProcessHandler {
                 "Error: Invalid account number format. Please use format ACC###"
         );
 
-        if (!accountManager.accountExists(accountNumber)) {
+        if (accountManager.accountExists(accountNumber)) {
             print("Error: Account not found. Please check the account number and try again.");
             pressEnterToContinue();
             return;

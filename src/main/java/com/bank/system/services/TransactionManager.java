@@ -7,17 +7,22 @@ import com.bank.system.models.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 
 public class TransactionManager {
     private final List<Transaction> allTransactions;
 
     private final AccountManager accountManager;
-    private int transactionCount;
+    private AtomicInteger transactionCounter = new AtomicInteger(1);
 
     public TransactionManager(AccountManager accountManager) {
         this.accountManager = accountManager;
-        this.allTransactions = new ArrayList<>();
+        this.allTransactions = Collections.synchronizedList(new ArrayList<>());
 
     }
 
