@@ -63,15 +63,7 @@ public class SavingsAccount extends Account  {
     public double getMinimumBalance() {
         return MINIMUM_BALANCE;
     }
-    @Override
-    public boolean deposit(double amount) throws InvalidAmountException {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Deposit amount must be greater than 0");
-        }
 
-        setBalance(getBalance() + amount);
-        return true;
-    }
 
 
 

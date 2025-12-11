@@ -1,7 +1,6 @@
 // Java
 package com.bank.system;
 
-import com.bank.system.exceptions.InvalidAmountException;
 import com.bank.system.processes.AccountProcessHandler;
 import com.bank.system.processes.TransactionProcessHandler;
 import com.bank.system.services.AccountManager;
@@ -115,12 +114,12 @@ public class Main {
         print(subSeparator(60));
         print(" ");
 
-        String accountNumber = readString("Enter Account Number: ",
+        String accountNumber = readString("Enter account number (format: ACC###): ",
                 isValidAccountNumber,
                 "Error: Invalid account number format. Please use format ACC###"
         );
 
-        if (!accountManager.accountExists(accountNumber)) {
+        if (accountManager.accountExists(accountNumber)) {
             print("Error: Account not found. Please check the account number and try again.");
             pressEnterToContinue();
             return;
@@ -169,12 +168,12 @@ public class Main {
      }
     private void generateAccountStatements() {
         print("\nGENERATE ACCOUNT STATEMENT");
-        String accountNumber = readString("Enter Account Number: ",
+        String accountNumber = readString("Enter account number (format: ACC###): ",
                 isValidAccountNumber,
                 "Error: Invalid account number format. Please use format ACC###"
         );
 
-        if (!accountManager.accountExists(accountNumber)) {
+        if (accountManager.accountExists(accountNumber)) {
             print("Error: Account not found. Please check the account number and try again.");
             pressEnterToContinue();
             return;
@@ -243,6 +242,7 @@ public class Main {
             default -> null;
         };
     }
+
 
     public void displayWelcomeMessage() {
         print("\nWelcome to the Bank Account Management System!");

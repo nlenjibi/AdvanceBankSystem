@@ -75,7 +75,7 @@ public class ExceptionTest {
         Transaction transaction = new Transaction(account.getAccountNumber(), TransactionType.WITHDRAWAL.name(), 200.0, account.getBalance());
 
         accountManager.addAccount(account);
-        account.addTransaction(transaction);
+
         transactionManager.addTransaction(transaction);
 
 

@@ -16,7 +16,7 @@ public abstract class Account implements Transactable {
     private final Customer customer;
     private double balance;
     private final String status;
-    protected final List<Transaction> transactions;
+
     private static final AtomicInteger ACCOUNT_COUNTER = new AtomicInteger(0);
 
     protected Account(Customer customer, double initialDeposit) {
@@ -24,7 +24,7 @@ public abstract class Account implements Transactable {
         this.balance = initialDeposit;
         this.status = "Active";
         this.accountNumber = generateAccountNumber();
-        this.transactions = new ArrayList<>();
+
     }
 
     private static String generateAccountNumber() {
@@ -36,12 +36,19 @@ public abstract class Account implements Transactable {
 
     public abstract String getAccountType();
 
-    // Deposit method - common for all account types
+
 
     // Abstract methods to be implemented by subclasses
     public abstract boolean withdraw(double amount) throws InsufficientFundsException, InvalidAmountException, OverdraftExceededException;
-    public abstract boolean deposit(double amount) throws InvalidAmountException;
 
+    public boolean deposit(double amount) throws InvalidAmountException {
+
+        if (amount <= 0) {
+            throw new InvalidAmountException("Deposit amount must be greater than 0");
+        }
+        setBalance(getBalance() + amount);
+        return true;
+    }
     // Withdraw method - to be overridden by subclasses
 
     // Getters and setters
@@ -53,25 +60,6 @@ public abstract class Account implements Transactable {
         return customer;
     }
 
-    public List<Transaction> getTransactions() {
-        return Collections.unmodifiableList(transactions);
-    }
-
-    public void addTransaction(Transaction transaction) {
-        if (transaction != null) {
-            transactions.add(transaction);
-        }
-    }
-    public boolean removeTransaction(Transaction transaction) {
-        return transaction != null && transactions.remove(transaction);
-    }
-
-    public boolean removeTransactionById(String transactionId) {
-        if (transactionId == null) {
-            return false;
-        }
-        return transactions.removeIf(t -> transactionId.equals(t.getTransactionId()));
-    }
 
     public double getBalance() {
         return balance;

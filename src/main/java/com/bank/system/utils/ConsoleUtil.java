@@ -127,7 +127,7 @@ public class ConsoleUtil {
     }
 
     public static void printf(String format, Object ... args) {
-        System.out.printf(format, args);
+        printf(format, args);
     }
     // a custom print method to displace text to the console
     public static void pr(Object text) {
@@ -144,9 +144,9 @@ public class ConsoleUtil {
     public static void formatCurrency(String label, double amount) {
         printf("%s: $%.2f%n", label, amount);
     }
-    public static boolean readConfirmation(String prompt) {
+    public static boolean readConfirmation() {
         while (true) {
-            pr(prompt + " (Y/N): ");
+            pr("Confirm transaction?" + " (Y/N): ");
             String input = scanner.nextLine().trim().toUpperCase();
 
             if (input.equals("Y") || input.equals("YES")) {
