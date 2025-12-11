@@ -13,6 +13,7 @@ public class ValidationUtils {
     private static final String NAME_PATTERN = "^[A-Za-zÀ-ÖØ-öø-ÿ\\s'-]+$";
     private static final String ADDRESS_PATTERN = "^[A-Za-z0-9\\s,.\\-]+$";
 
+
     private static final Pattern accountNumberRegex = Pattern.compile(ACCOUNT_NUMBER_PATTERN);
     private static final Pattern emailRegex = Pattern.compile(EMAIL_PATTERN);
     private static final Pattern phoneRegex = Pattern.compile(PHONE_PATTERN);
@@ -33,6 +34,8 @@ public class ValidationUtils {
             name -> name !=null && !name.trim().isEmpty() && nameRegex.matcher(name).matches();
     public static final Predicate<String> isValidAddress =
             address -> address != null && !address.trim().isEmpty() && addressRegex.matcher(address).matches();
+
+    public static final Predicate<Double> isValidAmount = amount -> amount != null && amount>0;
 
 
 

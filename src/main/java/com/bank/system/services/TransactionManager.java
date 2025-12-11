@@ -30,22 +30,6 @@ public class TransactionManager {
         return true;
     }
 
-    // Method to calculate total withdrawals for an account
-
-    public double totalWithdrawals(String accountNumber) {
-        return sumAmountsForTypes(accountNumber, TransactionType.WITHDRAWAL);
-    }
-    public double totalTransfered(String accountNumber) {
-        return sumAmountsForTypes(accountNumber, TransactionType.TRANSFER);
-    }
-    public double totalDeposits(String accountNumber) {
-        return sumAmountsForTypes(accountNumber, TransactionType.DEPOSIT);
-    }
-    public double totalReceived(String accountNumber) {
-        return sumAmountsForTypes(accountNumber, TransactionType.RECEIVE);
-    }
-
-
     // Method to get the number of transactions
     public int getTransactionCount() {
         return transactionCount;
@@ -69,7 +53,7 @@ public class TransactionManager {
         if(success) {
             Transaction transaction = createTransaction(accountNumber, TransactionType.DEPOSIT, amount, newBalance);
             allTransactions.add(transaction);
-            account.addTransaction(transaction);
+
             return true;
         }
         return false;
@@ -94,7 +78,7 @@ public class TransactionManager {
 
             Transaction transaction = createTransaction(accountNumber, TransactionType.WITHDRAWAL, amount, newBalance);
             allTransactions.add(transaction);
-            account.addTransaction(transaction);
+
             return true;
         }
         return false;
@@ -131,13 +115,13 @@ public class TransactionManager {
         if(fromSuccess) {
             Transaction withdrawalTransaction = createTransaction(fromAccountNumber, TransactionType.TRANSFER, amount, newFromBalance);
             allTransactions.add(withdrawalTransaction);
-            fromAccount.addTransaction(withdrawalTransaction);
+
         }
         // Record deposit transaction
         if (toSuccess) {
             Transaction depositTransaction = createTransaction(toAccountNumber, TransactionType.RECEIVE, amount, newToBalance);
             allTransactions.add(depositTransaction);
-            toAccount.addTransaction(depositTransaction);
+
         }
         return true;
     }
@@ -172,36 +156,12 @@ public class TransactionManager {
         return null;
     }
 
-    private double sumAmountsForTypes(String accountNumber, TransactionType... types) {
-        if (allTransactions.isEmpty()) return 0.0;
-        double sum = 0.0;
-        for (Transaction transaction : allTransactions) {
-            if (!isMatchingAccount(transaction, accountNumber)) {
-                continue;
-            }
-            if (matchesType(transaction, types)) {
-                sum += transaction.getAmount();
-            }
-        }
-        return sum;
-    }
 
     private boolean isMatchingAccount(Transaction transaction, String accountNumber) {
         return transaction != null && accountNumber.equals(transaction.getAccountNumber());
     }
 
-    private boolean matchesType(Transaction transaction, TransactionType... types) {
-        if (types == null || types.length == 0) {
-            return false;
-        }
-        String transactionType = transaction.getType();
-        for (TransactionType type : types) {
-            if (type.name().equalsIgnoreCase(transactionType)) {
-                return true;
-            }
-        }
-        return false;
-    }
+
 
     private Transaction createTransaction(String accountNumber, TransactionType type, double amount, double balanceAfter) {
         return new Transaction(accountNumber, type.name(), amount, balanceAfter);

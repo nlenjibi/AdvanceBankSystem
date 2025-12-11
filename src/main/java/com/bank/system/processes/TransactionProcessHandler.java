@@ -12,14 +12,15 @@ import com.bank.system.services.TransactionManager;
 
 
 import static com.bank.system.utils.ConsoleUtil.*;
+import static com.bank.system.utils.ValidationUtils.*;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class TransactionProcessHandler {
     private final TransactionManager transactionManager;
     private final AccountManager accountManager;
     private final StatementGenerator statementGenerator;
+    private static final String AMOUNT_MUST_BE_POSITIVE = "Amount must be greater than zero.";
+    private static final String TRANS_DETAILS_UNAVAILABLE = "Transaction details unavailable.";
 
     public TransactionProcessHandler(AccountManager accountManager, TransactionManager transactionManager, StatementGenerator statementGenerator) {
         this.transactionManager = transactionManager;
@@ -30,8 +31,8 @@ public class TransactionProcessHandler {
 
 
         double amount = getValidDoubleInput("Enter amount to deposit: $",
-                v -> v > 0,
-                "Amount must be greater than zero.");
+                isValidAmount,
+                AMOUNT_MUST_BE_POSITIVE);
 
         Account account = accountManager.getAccount(accountNumber);
         double previousBalance = account.getBalance();
@@ -48,10 +49,10 @@ public class TransactionProcessHandler {
         if (transaction != null) {
             transaction.displayTransactionDetails(previousBalance);
         } else {
-            print("Transaction details unavailable.");
+            print(TRANS_DETAILS_UNAVAILABLE);
         }
         print(" ");
-        boolean confirmed = readConfirmation("Confirm transaction?");
+        boolean confirmed = readConfirmation();
         handleTransactionConfirmation(confirmed, account, previousBalance, captureTransactions(accountNumber));
         pressEnterToContinue();
 
@@ -61,8 +62,7 @@ public class TransactionProcessHandler {
 
     public void performWithdrawal(String accountNumber) throws InvalidAmountException {
         double amount = getValidDoubleInput("Enter amount to withdraw: $",
-                v -> v > 0,
-                "Amount must be greater than zero.");
+                isValidAmount,AMOUNT_MUST_BE_POSITIVE);
 
         Account account = accountManager.getAccount(accountNumber);
         double previousBalance = account.getBalance();
@@ -83,19 +83,19 @@ public class TransactionProcessHandler {
         if (transaction != null) {
             transaction.displayTransactionDetails(previousBalance);
         } else {
-            print("Transaction details unavailable.");
+            print(TRANS_DETAILS_UNAVAILABLE);
         }
         print(" ");
-        boolean confirmed = readConfirmation("Confirm transaction?");
+        boolean confirmed = readConfirmation();
         handleTransactionConfirmation(confirmed, account, previousBalance, captureTransactions(accountNumber));
         pressEnterToContinue();
 
     }
 
     public void performTransfer(String fromAccountNumber) throws InvalidAmountException {
-        String toAccountNumber = readString("Enter destination account number: ",
-                s -> !s.isEmpty(),
-                "Account Number cannot be empty."
+        String toAccountNumber = readString("Enter destination account number (format: ACC###): ",
+                isValidAccountNumber,
+                "Error: Invalid account number format. Please use format ACC###"
         );
 
         if (!accountManager.accountExists(toAccountNumber)) {
@@ -105,8 +105,8 @@ public class TransactionProcessHandler {
         }
 
         double amount = getValidDoubleInput("Enter amount to transfer: $",
-                v -> v > 0,
-                "Amount must be greater than zero.");
+                isValidAmount,
+                AMOUNT_MUST_BE_POSITIVE);
 
 
         Account fromAccount = accountManager.getAccount(fromAccountNumber);
@@ -123,15 +123,14 @@ public class TransactionProcessHandler {
 
         transactionManager.transfer(fromAccountNumber, toAccountNumber, amount);
         Transaction fromTransaction = transactionManager.getLastTransaction(fromAccountNumber);
-        Transaction toTransaction = transactionManager.getLastTransaction(toAccountNumber);
 
         if (fromTransaction != null) {
             fromTransaction.displayTransactionDetails(fromPreviousBalance);
         } else {
-            print("Transaction details unavailable.");
+            print(TRANS_DETAILS_UNAVAILABLE);
         }
         print(" ");
-        boolean confirmed = readConfirmation("Confirm transaction?");
+        boolean confirmed = readConfirmation();
         if (confirmed) {
             print("\n✓ Transfer successful!");
             print("From Account: " + fromAccountNumber + " (Previous: $" + String.format("%.2f", fromPreviousBalance) +
@@ -155,19 +154,9 @@ public class TransactionProcessHandler {
         print("\n" + statement);
         pressEnterToContinue();
     }
-    private String formatAmount(double amount) {
-        return String.format("%.2f", amount);
-    }
-    private List<Transaction> sortTransactionsByTimestampDesc(List<Transaction> transactions) {
-        List<Transaction> sortedTransactions = new ArrayList<>(transactions);
-        sortedTransactions.sort((t1, t2) -> t2.getTimestamp().compareTo(t1.getTimestamp()));
-        return sortedTransactions;
-    }
 
-    private boolean isCreditTransaction(Transaction transaction) {
-        String type = transaction.getType();
-        return "DEPOSIT".equalsIgnoreCase(type) || "RECEIVE".equalsIgnoreCase(type);
-    }
+
+
     private void handleTransactionConfirmation(boolean confirmed, Account account, double previousBalance, TransactionSnapshot snapshot) {
         if (confirmed) {
             print(" ");
@@ -192,7 +181,7 @@ public class TransactionProcessHandler {
         if (snapshot == null) {
             return;
         }
-        snapshot.removeFrom(transactionManager, account);
+        snapshot.removeFrom(transactionManager);
         account.setBalance(previousBalance);
     }
 
@@ -221,12 +210,12 @@ public class TransactionProcessHandler {
             }
         }
 
-        private void removeFrom(TransactionManager manager, Account account) {
+        private void removeFrom(TransactionManager manager) {
             if (latestTransactionId == null) {
                 return;
             }
             manager.removeTransaction(latestTransactionId);
-            account.removeTransactionById(latestTransactionId);
+
         }
     }
 

@@ -16,7 +16,7 @@ public abstract class Account implements Transactable {
     private final Customer customer;
     private double balance;
     private final String status;
-    protected final List<Transaction> transactions;
+
     private static final AtomicInteger ACCOUNT_COUNTER = new AtomicInteger(0);
 
     protected Account(Customer customer, double initialDeposit) {
@@ -24,7 +24,7 @@ public abstract class Account implements Transactable {
         this.balance = initialDeposit;
         this.status = "Active";
         this.accountNumber = generateAccountNumber();
-        this.transactions = new ArrayList<>();
+
     }
 
     private static String generateAccountNumber() {
@@ -60,25 +60,6 @@ public abstract class Account implements Transactable {
         return customer;
     }
 
-    public List<Transaction> getTransactions() {
-        return Collections.unmodifiableList(transactions);
-    }
-
-    public void addTransaction(Transaction transaction) {
-        if (transaction != null) {
-            transactions.add(transaction);
-        }
-    }
-    public boolean removeTransaction(Transaction transaction) {
-        return transaction != null && transactions.remove(transaction);
-    }
-
-    public boolean removeTransactionById(String transactionId) {
-        if (transactionId == null) {
-            return false;
-        }
-        return transactions.removeIf(t -> transactionId.equals(t.getTransactionId()));
-    }
 
     public double getBalance() {
         return balance;
