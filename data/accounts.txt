@@ -1,5 +1,5 @@
-ACC003|15750.0|Savings|Premium|Michael Chen|42|+1-555-0103|321 Pine Road, Metropolis
-ACC004|890.0|Checking|Regular|Emily Brown|31|+1-555-0104|654 Maple Drive, Metropolis
 ACC001|5250.0|Savings|Regular|John Smith|35|+1-555-0101|456 Elm Street, Metropolis
 ACC002|3450.0|Checking|Regular|Sarah Johnson|28|+1-555-0102|789 Oak Avenue, Metropolis
+ACC003|15750.0|Savings|Premium|Michael Chen|42|+1-555-0103|321 Pine Road, Metropolis
+ACC004|890.0|Checking|Regular|Emily Brown|31|+1-555-0104|654 Maple Drive, Metropolis
 ACC005|25300.0|Savings|Premium|David Wilson|48|+1-555-0105|987 Cedar Lane, Metropolis

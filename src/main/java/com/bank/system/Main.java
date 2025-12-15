@@ -48,13 +48,12 @@ public class Main {
 
     private void run() {
         displayWelcomeMessage();
-//        accountProcessHandler.initializeSampleData();
-//        loadDataFromFiles();
+      //accountProcessHandler.initializeSampleData();
 
         boolean running = true;
         while (running) {
             displayMainMenu();
-            int choice = getValidIntInput("Enter your choice: ", 1, 5);
+            int choice = getValidIntInput("Enter your choice: ", 1, 6);
             running = processMenuChoice(choice);
         }
         shutdown();
