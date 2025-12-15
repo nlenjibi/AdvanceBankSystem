@@ -39,7 +39,12 @@ public class FilePersistence {
             List<Account> sorted = new ArrayList<>(accounts.values());
             sorted.sort(Comparator.comparing(Account::getAccountNumber));
 
+            Set<String> written = new HashSet<>();
             for (Account account : sorted) {
+                if (!written.add(account.getAccountNumber())) {
+                    print("Skipped duplicate account during save: " + account.getAccountNumber());
+                    continue;
+                }
                 writer.write(serializeAccount(account));
                 writer.newLine();
             }
@@ -70,7 +75,12 @@ public class FilePersistence {
            List<Transaction> sorted = new ArrayList<>(transactions);
            sorted.sort(Comparator.comparing(Transaction::getTransactionId));
 
+           Set<String> seenIds = new HashSet<>();
            for (Transaction transaction : sorted) {
+               if (!seenIds.add(transaction.getTransactionId())) {
+                   print("Skipped duplicate transaction during save: " + transaction.getTransactionId());
+                   continue;
+               }
                writer.write(serializeTransaction(transaction));
                writer.newLine();
            }
@@ -96,9 +106,18 @@ public class FilePersistence {
             List<String> lines = Files.readAllLines(path);
             print("Loading account data from files...");
 
+            Set<String> seenAccountNumbers = new HashSet<>();
             for (String line : lines) {
-                Optional<Account> account = deserializeAccount(line);
-                account.ifPresent(a -> accounts.put(a.getAccountNumber(), a));
+                Optional<Account> accountOpt = deserializeAccount(line);
+                if (accountOpt.isEmpty()) {
+                    continue;
+                }
+                Account account = accountOpt.get();
+                if (!seenAccountNumbers.add(account.getAccountNumber())) {
+                    print("Skipping duplicate account entry for " + account.getAccountNumber());
+                    continue;
+                }
+                accounts.put(account.getAccountNumber(), account);
             }
 
             print("✓ " + accounts.size() + " accounts loaded successfully from " + ACCOUNTS_FILE);
@@ -126,9 +145,18 @@ public class FilePersistence {
         try {
             List<String> lines = Files.readAllLines(path);
 
+            Set<String> seenTransactionIds = new HashSet<>();
             for (String line : lines) {
-                Optional<Transaction> transaction = deserializeTransaction(line);
-                transaction.ifPresent(transactions::add);
+                Optional<Transaction> transactionOpt = deserializeTransaction(line);
+                if (transactionOpt.isEmpty()) {
+                    continue;
+                }
+                Transaction transaction = transactionOpt.get();
+                if (!seenTransactionIds.add(transaction.getTransactionId())) {
+                    print("Skipping duplicate transaction entry for " + transaction.getTransactionId());
+                    continue;
+                }
+                transactions.add(transaction);
             }
 
             print("✓ " + transactions.size() + " transactions loaded from " + TRANSACTIONS_FILE);
