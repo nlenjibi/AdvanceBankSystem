@@ -1,7 +1,7 @@
 package com.bank.system.processes;
 
 
-import com.bank.system.exceptions.*;
+import com.bank.system.exceptions.InvalidAmountException;
 import com.bank.system.models.Account;
 import com.bank.system.models.SavingsAccount;
 import com.bank.system.models.Transaction;
@@ -10,9 +10,13 @@ import com.bank.system.services.StatementGenerator;
 import com.bank.system.services.TransactionManager;
 
 
-
-import static com.bank.system.utils.ConsoleUtil.*;
-import static com.bank.system.utils.ValidationUtils.*;
+import static com.bank.system.utils.ConsoleUtil.getValidDoubleInput;
+import static com.bank.system.utils.ConsoleUtil.print;
+import static com.bank.system.utils.ConsoleUtil.pressEnterToContinue;
+import static com.bank.system.utils.ConsoleUtil.readConfirmation;
+import static com.bank.system.utils.ConsoleUtil.readString;
+import static com.bank.system.utils.ValidationUtils.isValidAccountNumber;
+import static com.bank.system.utils.ValidationUtils.isValidAmount;
 
 
 public class TransactionProcessHandler {
@@ -53,6 +57,7 @@ public class TransactionProcessHandler {
         }
         print(" ");
         boolean confirmed = readConfirmation();
+
         handleTransactionConfirmation(confirmed, account, previousBalance, captureTransactions(accountNumber));
         pressEnterToContinue();
 
@@ -98,7 +103,7 @@ public class TransactionProcessHandler {
                 "Error: Invalid account number format. Please use format ACC###"
         );
 
-        if (accountManager.accountExists(toAccountNumber)) {
+        if (!accountManager.accountExists(toAccountNumber)) {
             print("Error: Destination account not found. Please check the account number and try again.");
             pressEnterToContinue();
             return;

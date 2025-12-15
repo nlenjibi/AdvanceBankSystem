@@ -1,6 +1,5 @@
 package com.bank.system.models;
 
-import com.bank.system.enums.TransactionType;
 import com.bank.system.exceptions.InsufficientFundsException;
 import com.bank.system.exceptions.InvalidAmountException;
 
@@ -11,8 +10,11 @@ public class SavingsAccount extends Account  {
     private static final double MINIMUM_BALANCE = 500.0;
     private static final double WITHDRAWAL_FEE = 2.0;
 
-    public SavingsAccount(Customer customer, double initialBalance) {
-        super(customer, initialBalance);
+    public SavingsAccount(Customer customer, double initialDeposit) {
+        this(generateAccountNumber(), customer, initialDeposit);
+    }
+    public SavingsAccount(String accountNumber, Customer customer, double initialBalance) {
+        super(accountNumber, customer, initialBalance);
 
     }
 
@@ -37,11 +39,9 @@ public class SavingsAccount extends Account  {
 
     @Override
     public boolean withdraw(double amount) throws InvalidAmountException, InsufficientFundsException {
-        if (amount <= 0) {
-            throw new InvalidAmountException("Withdrawal amount must be greater than 0");
-        }
+        ensurePositiveAmount(amount, "Withdrawal");
 
-        double withdrawalTotal = amount;
+        double withdrawalTotal = amount ;
         if (getBalance() - withdrawalTotal < MINIMUM_BALANCE) {
             throw new InsufficientFundsException(
                     String.format(

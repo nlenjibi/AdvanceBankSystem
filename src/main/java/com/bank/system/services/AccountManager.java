@@ -42,28 +42,6 @@ public class AccountManager {
     }
 
 
-    // Method to view all accounts
-    public void viewAllAccounts() {
-        if (getTotalAccounts() == 0) {
-            print("No accounts found.");
-            pressEnterToContinue();
-            return;
-        }
-        print(" ");
-        printHeader("ACCOUNT LISTING");
-        printSeparator();
-        printf("%-8s | %-15s | %-9s | %-10s | %-8s%n",
-                "ACC NO", "CUSTOMER NAME", "TYPE", "BALANCE", "STATUS");
-        printSeparator();
-        for (Account acct : accounts.values()) {
-            acct.displayAccountDetails();
-            printSeparator();
-        }
-
-        printf("Total Accounts: %d%n", getTotalAccounts());
-        printf("Total Bank Balance: $%,.2f%n", getTotalBalance());
-        pressEnterToContinue(); // Wait for user to press Enter
-    }
 
     /**
      * Gets the total balance across all accounts

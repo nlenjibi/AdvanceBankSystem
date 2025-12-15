@@ -1,147 +1,113 @@
 package com.bank.system.services;
 
-import models.*;
-import utils.ValidationUtils;
+import com.bank.system.models.*;
+import static com.bank.system.utils.ValidationUtils.*;
+import static com.bank.system.utils.ConsoleUtil.*;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
+
 
 public class FilePersistence {
     private static final String ACCOUNTS_FILE = "data/accounts.txt";
     private static final String TRANSACTIONS_FILE = "data/transactions.txt";
-    
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final String DELIMITER = "|";
+    private static final int ACCOUNT_FIELDS = 8;
+    private static final int TRANSACTION_FIELDS = 6;
 
     /**
      * Saves accounts to the accounts file
      */
     public void saveAccounts(Map<String, Account> accounts) {
+        Path path = Paths.get(ACCOUNTS_FILE);
+
+        // Ensure parent directory exists
         try {
-            List<String> lines = new ArrayList<>();
-            
-            for (Account account : accounts.values()) {
-                String line = String.format("%s|%s|%s|%s|%s|%s",
-                    account.getAccountNumber(),
-                    account.getBalance(),
-                    getAccountType(account),
-                    account.getCustomer().getName(),
-                    account.getCustomer().getEmail(),
-                    account.getCustomer().getPhoneNumber()
-                );
-                lines.add(line);
+            if (path.getParent() != null) {
+                Files.createDirectories(path.getParent());
             }
-            
-            Path path = Paths.get(ACCOUNTS_FILE);
-            Files.write(path, lines);
-            System.out.println("Accounts saved to " + ACCOUNTS_FILE);
         } catch (IOException e) {
-            System.err.println("Error saving accounts: " + e.getMessage());
+            print("Error creating directories for " + ACCOUNTS_FILE + ": " + e.getMessage());
+            return;
+        }
+
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+            List<Account> sorted = new ArrayList<>(accounts.values());
+            sorted.sort(Comparator.comparing(Account::getAccountNumber));
+
+            for (Account account : sorted) {
+                writer.write(serializeAccount(account));
+                writer.newLine();
+            }
+
+            print("Accounts saved to " + ACCOUNTS_FILE);
+        } catch (IOException e) {
+            print("Error saving accounts: " + e.getMessage());
         }
     }
 
     /**
      * Saves transactions to the transactions file
      */
-    public void saveTransactions(List<Transaction> transactions) {
-        try {
-            List<String> lines = transactions.stream()
-                .map(transaction -> String.format("%s|%s|%s|%s|%s|%s",
-                    transaction.getTransactionId(),
-                    transaction.getAccountNumber(),
-                    transaction.getType(),
-                    transaction.getAmount(),
-                    transaction.getBalanceAfter(),
-                    transaction.getTimestamp().format(DATE_FORMAT)
-                ))
-                .collect(Collectors.toList());
-            
-            Path path = Paths.get(TRANSACTIONS_FILE);
-            Files.write(path, lines);
-            System.out.println("Transactions saved to " + TRANSACTIONS_FILE);
-        } catch (IOException e) {
-            System.err.println("Error saving transactions: " + e.getMessage());
-        }
-    }
+   public void saveTransactions(List<Transaction> transactions) {
+       Path path = Paths.get(TRANSACTIONS_FILE);
+
+       // Ensure parent directory exists
+       try {
+           if (path.getParent() != null) {
+               Files.createDirectories(path.getParent());
+           }
+       } catch (IOException e) {
+           print("Error creating directories for " + TRANSACTIONS_FILE + ": " + e.getMessage());
+           return;
+       }
+
+       try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+           List<Transaction> sorted = new ArrayList<>(transactions);
+           sorted.sort(Comparator.comparing(Transaction::getTransactionId));
+
+           for (Transaction transaction : sorted) {
+               writer.write(serializeTransaction(transaction));
+               writer.newLine();
+           }
+           print("Transactions saved to " + TRANSACTIONS_FILE);
+       } catch (IOException e) {
+           print("Error saving transactions: " + e.getMessage());
+       }
+   }
 
     /**
      * Loads accounts from the accounts file
      */
     public Map<String, Account> loadAccounts() {
         Map<String, Account> accounts = new HashMap<>();
-        
-        try {
-            Path path = Paths.get(ACCOUNTS_FILE);
-            if (!Files.exists(path)) {
-                System.out.println("Accounts file does not exist. Starting with empty accounts.");
-                return accounts;
-            }
-            
-            List<String> lines = Files.readAllLines(path);
-            System.out.println("Loading account data from files...");
-            
-            for (String line : lines) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 6) {
-                    String accountNumber = parts[0];
-                    double balance = Double.parseDouble(parts[1]);
-                    String accountType = parts[2];
-                    String customerName = parts[3];
-                    String customerEmail = parts[4];
-                    String customerPhone = parts[5];
-                    
-                    // Validate data before creating objects
-                    if (!ValidationUtils.validateAccountNumber(accountNumber)) {
-                        System.err.println("Invalid account number: " + accountNumber);
-                        continue;
-                    }
-                    
-                    if (!ValidationUtils.validateEmail(customerEmail)) {
-                        System.err.println("Invalid email: " + customerEmail);
-                        continue;
-                    }
-                    
-                    if (!ValidationUtils.validateName(customerName)) {
-                        System.err.println("Invalid name: " + customerName);
-                        continue;
-                    }
-                    
-                    if (!ValidationUtils.validatePhone(customerPhone)) {
-                        System.err.println("Invalid phone: " + customerPhone);
-                        continue;
-                    }
-                    
-                    Customer customer = new RegularCustomer(customerName, customerEmail, customerPhone);
-                    
-                    Account account;
-                    if ("Savings".equals(accountType)) {
-                        account = new SavingsAccount(accountNumber, balance, customer);
-                    } else if ("Checking".equals(accountType)) {
-                        account = new CheckingAccount(accountNumber, balance, customer);
-                    } else {
-                        System.err.println("Unknown account type: " + accountType);
-                        continue;
-                    }
-                    
-                    accounts.put(accountNumber, account);
-                }
-            }
-            
-            System.out.println("✓ " + accounts.size() + " accounts loaded successfully from " + ACCOUNTS_FILE);
-        } catch (IOException e) {
-            System.err.println("Error loading accounts: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error processing account data: " + e.getMessage());
+        Path path = Paths.get(ACCOUNTS_FILE);
+
+        if (!Files.exists(path)) {
+           print("Accounts file does not exist. Starting with empty accounts.");
+            return accounts;
         }
-        
+
+        try {
+            List<String> lines = Files.readAllLines(path);
+            print("Loading account data from files...");
+
+            for (String line : lines) {
+                Optional<Account> account = deserializeAccount(line);
+                account.ifPresent(a -> accounts.put(a.getAccountNumber(), a));
+            }
+
+            print("✓ " + accounts.size() + " accounts loaded successfully from " + ACCOUNTS_FILE);
+        } catch (IOException e) {
+            print("Error loading accounts: " + e.getMessage());
+        } catch (Exception e) {
+            print("Error processing account data: " + e.getMessage());
+        }
+
         return accounts;
     }
 
@@ -150,45 +116,144 @@ public class FilePersistence {
      */
     public List<Transaction> loadTransactions() {
         List<Transaction> transactions = new ArrayList<>();
-        
-        try {
-            Path path = Paths.get(TRANSACTIONS_FILE);
-            if (!Files.exists(path)) {
-                System.out.println("Transactions file does not exist. Starting with empty transactions.");
-                return transactions;
-            }
-            
-            List<String> lines = Files.readAllLines(path);
-            
-            for (String line : lines) {
-                String[] parts = line.split("\\|");
-                if (parts.length >= 6) {
-                    String transactionId = parts[0];
-                    String accountNumber = parts[1];
-                    String type = parts[2];
-                    double amount = Double.parseDouble(parts[3]);
-                    double balanceAfter = Double.parseDouble(parts[4]);
-                    LocalDateTime timestamp = LocalDateTime.parse(parts[5], DATE_FORMAT);
-                    
-                    Transaction transaction = new Transaction(transactionId, accountNumber, type, amount, balanceAfter);
-                    transaction.setTimestamp(timestamp);
-                    transactions.add(transaction);
-                }
-            }
-            
-            System.out.println("✓ " + transactions.size() + " transactions loaded from " + TRANSACTIONS_FILE);
-        } catch (IOException e) {
-            System.err.println("Error loading transactions: " + e.getMessage());
-        } catch (Exception e) {
-            System.err.println("Error processing transaction data: " + e.getMessage());
+        Path path = Paths.get(TRANSACTIONS_FILE);
+
+        if (!Files.exists(path)) {
+            print("Transactions file does not exist. Starting with empty transactions.");
+            return transactions;
         }
-        
+
+        try {
+            List<String> lines = Files.readAllLines(path);
+
+            for (String line : lines) {
+                Optional<Transaction> transaction = deserializeTransaction(line);
+                transaction.ifPresent(transactions::add);
+            }
+
+            print("✓ " + transactions.size() + " transactions loaded from " + TRANSACTIONS_FILE);
+        } catch (IOException e) {
+            print("Error loading transactions: " + e.getMessage());
+        } catch (Exception e) {
+            print("Error processing transaction data: " + e.getMessage());
+        }
+
         return transactions;
     }
-    
-    /**
-     * Helper method to get the account type as a string
-     */
+
+    private String serializeAccount(Account account) {
+        Customer customer = account.getCustomer();
+        String customerType = (customer instanceof PremiumCustomer) ? "Premium" : "Regular";
+        return String.join(DELIMITER,
+                account.getAccountNumber(),
+                String.valueOf(account.getBalance()),
+                account.getAccountType(),
+                customerType,
+                customer.getName(),
+                String.valueOf(customer.getAge()),
+                customer.getContact(),
+                customer.getAddress()
+        );
+    }
+
+    private Optional<Account> deserializeAccount(String line) {
+        String[] parts = line.split("\\Q" + DELIMITER + "\\E");
+        if (parts.length != ACCOUNT_FIELDS) {
+            print("Skipping malformed account line: " + line);
+            return Optional.empty();
+        }
+
+        try {
+            String accountNumber = parts[0];
+            double balance = Double.parseDouble(parts[1]);
+            String accountType = parts[2];
+            String customerType = parts[3];
+            String customerName = parts[4];
+            int customerAge = Integer.parseInt(parts[5]);
+            String customerPhone = parts[6];
+            String customerAddress = parts[7];
+
+            if (!validateAccountNumber(accountNumber)) {
+                print("Invalid account number: " + accountNumber);
+                return Optional.empty();
+            }
+            if (!validateAddress(customerAddress)) {
+                print("Invalid Address: " + customerAddress);
+                return Optional.empty();
+            }
+            if (!validateName(customerName)) {
+                print("Invalid name: " + customerName);
+                return Optional.empty();
+            }
+            if (!validateContactNumber(customerPhone)) {
+                print("Invalid phone: " + customerPhone);
+                return Optional.empty();
+            }
+            if (!validateAge(customerAge)) {
+                print("Invalid age: " + customerAge);
+                return Optional.empty();
+            }
+
+            Customer customer;
+            if ("Regular".equals(customerType)) {
+                customer = new RegularCustomer(customerName, customerAge, customerPhone, customerAddress);
+            } else if ("Premium".equals(customerType)) {
+                customer = new PremiumCustomer(customerName, customerAge, customerPhone, customerAddress);
+            } else {
+                print("Unknown customer type: " + customerType);
+                return Optional.empty();
+            }
+
+            Account account;
+            if ("Savings".equals(accountType)) {
+                account = new SavingsAccount(accountNumber, customer, balance);
+            } else if ("Checking".equals(accountType)) {
+                account = new CheckingAccount(accountNumber, customer, balance);
+            } else {
+                print("Unknown account type: " + accountType);
+                return Optional.empty();
+            }
+
+            return Optional.of(account);
+        } catch (NumberFormatException e) {
+            print("Number format error while parsing account line: " + line);
+            return Optional.empty();
+        }
+    }
+
+    private String serializeTransaction(Transaction transaction) {
+        return String.join(DELIMITER,
+                transaction.getTransactionId(),
+                transaction.getAccountNumber(),
+                transaction.getType(),
+                String.valueOf(transaction.getAmount()),
+                String.valueOf(transaction.getBalanceAfter()),
+                transaction.getTimestamp()
+        );
+    }
+
+    private Optional<Transaction> deserializeTransaction(String line) {
+        String[] parts = line.split("\\Q" + DELIMITER + "\\E");
+        if (parts.length != TRANSACTION_FIELDS) {
+            print("Skipping malformed transaction line: " + line);
+            return Optional.empty();
+        }
+
+        try {
+            String transactionId = parts[0];
+            String accountNumber = parts[1];
+            String type = parts[2];
+            double amount = Double.parseDouble(parts[3]);
+            double balanceAfter = Double.parseDouble(parts[4]);
+            String timestamp = parts[5];
+
+            return Optional.of(new Transaction(transactionId, accountNumber, type, amount, balanceAfter, timestamp));
+        } catch (NumberFormatException e) {
+            print("Number format error while parsing transaction line: " + line);
+            return Optional.empty();
+        }
+    }
+
     private String getAccountType(Account account) {
         if (account instanceof SavingsAccount) {
             return "Savings";
