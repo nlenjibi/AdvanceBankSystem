@@ -48,7 +48,8 @@ public class Main {
 
     private void run() {
         displayWelcomeMessage();
-      //accountProcessHandler.initializeSampleData();
+        //accountProcessHandler.initializeSampleData();
+        loadDataFromFiles();
 
         boolean running = true;
         while (running) {
@@ -77,10 +78,13 @@ public class Main {
                 saveLoadData();
                 yield true;
             }case 5 -> {
+                runConcurrentSimulation();
+                yield true;
+            }case 6 -> {
                 runTests();
                 yield true;
             }
-            case 6 -> false;
+            case 7 -> false;
             default -> true;
         };
     }
@@ -97,8 +101,9 @@ public class Main {
         print("2. Perform Transactions");
         print("3. Generate Account Statements");
         print("4. Save/Load Data");
-        print("5. Run Tests");
-        print("6. Exit");
+        print("5. Run Concurrent Simulation");
+        print("6. Run Tests");
+        print("7. Exit");
         print("");
     }
     private void manageAccounts() {
@@ -330,6 +335,35 @@ public class Main {
         }
         pressEnterToContinue();
     }
+    private static void runConcurrentSimulation() {
+
+        boolean backToMain = false;
+        while (!backToMain) {
+            print("Simulation Menu");
+            print("1. Run Single Simulation");
+            print("2. Run Multi Account Simulation");
+            print("3. Back to Main Menu");
+            int choice = getValidIntInput("Choose an option:", 1, 3);
+
+            switch (choice) {
+                case 1:
+                    ConcurrencyUtils.runConcurrentSimulation(accountManager, transactionManager, 5);
+                    break;
+                case 2:
+                    ConcurrencyUtils.runMultiAccountConcurrentSimulation(accountManager, transactionManager, 5);
+                    break;
+                case 3:
+                    backToMain = true;
+                    break;
+                default:
+                    print("Invalid choice. Please try again.");
+            }
+        }
+
+
+
+
+    }
 
     private static void saveDataToFiles() {
         print("\nSAVING ACCOUNT DATA");
@@ -346,4 +380,5 @@ public class Main {
         print("Data automatically saved to disk.");
         print("Goodbye!");
     }
+
 }

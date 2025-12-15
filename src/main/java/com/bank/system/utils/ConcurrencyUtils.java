@@ -9,6 +9,8 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+
+import static com.bank.system.utils.ConsoleUtil.pressEnterToContinue;
 import static com.bank.system.utils.ConsoleUtil.print;
 
 public class ConcurrencyUtils {
@@ -75,6 +77,7 @@ public class ConcurrencyUtils {
                         }
                     }
                 });
+
             }
         } finally {
             // Shutdown the executor and wait for all tasks to complete
@@ -95,6 +98,7 @@ public class ConcurrencyUtils {
             print("\nThread-safe operations completed successfully.");
             print("Final Balance for " + finalAccount.getAccountNumber() + ": $" + String.format("%.2f", finalAccount.getBalance()));
         }
+        pressEnterToContinue();
     }
     
 
@@ -175,6 +179,7 @@ public class ConcurrencyUtils {
         for (Account account : accountManager.getAllAccounts()) {
             print("Final Balance for " + account.getAccountNumber() + ": $" + String.format("%.2f", account.getBalance()));
         }
+        pressEnterToContinue();
     }
 }
 
