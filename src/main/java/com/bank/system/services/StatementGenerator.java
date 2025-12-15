@@ -1,10 +1,12 @@
 package com.bank.system.services;
 
-import com.bank.system.models.*;
+import com.bank.system.models.Account;
+import com.bank.system.models.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
-import static com.bank.system.utils.ConsoleUtil.*;
+import static com.bank.system.utils.ConsoleUtil.subSeparator;
+import static com.bank.system.utils.ConsoleUtil.separator;
 
 public class StatementGenerator {
     private final AccountManager accountManager;
@@ -22,8 +24,6 @@ public class StatementGenerator {
         }
         
         List<Transaction> transactions = transactionManager.getTransactionsForAccount(accountNumber);
-        StatementTotals totals = calculateTotals(transactions);
-
 
         StringBuilder statement = new StringBuilder();
         statement.append(" \n");
@@ -55,9 +55,9 @@ public class StatementGenerator {
                     "TXN ID", "DATE/TIME", "TYPE", "AMOUNT", "BALANCE AFTER"));
             statement.append(subSeparator(90)).append("\n");
 
-            List<Transaction> sortedTransactions = sortTransactionsByTimestampDesc(transactions);
+            List<Transaction> sortedTransactions = transactionManager.sortTransactionsByTimestampDesc(transactions);
             for (Transaction transaction : sortedTransactions) {
-                String sign = isCreditTransaction(transaction) ? "+" : "-";
+                String sign = transactionManager.isCreditTransaction(transaction) ? "+" : "-";
                 statement.append(String.format("%-12s | %-20s | %-12s | %s$%,12.2f | $%,15.2f%n",
                         transaction.getTransactionId(),
                         transaction.getTimestamp(),
@@ -67,15 +67,15 @@ public class StatementGenerator {
                         transaction.getBalanceAfter()));
             }
 
-            double netChange = totals.totalDeposits - totals.totalWithdrawals;
+            double netChange = transactionManager.getTotalDeposits(accountNumber) - transactionManager.getTotalWithdrawals(accountNumber);
             statement.append(subSeparator(90)).append("\n\n");
             statement.append("SUMMARY:\n");
             statement.append(subSeparator(35)).append("\n");
             statement.append("Total Transactions: ").append(transactions.size()).append("\n");
-            statement.append(String.format("Total Deposits: $%,.2f%n", totals.totalDeposits));
-            statement.append(String.format("Total Withdrawals: $%,.2f%n", totals.totalWithdrawals));
-            statement.append(String.format("Total Received: $%,.2f%n", totals.totalReceived));
-            statement.append(String.format("Total Sent: $%,.2f%n", totals.totalSent));
+            statement.append(String.format("Total Deposits: $%,.2f%n", transactionManager.getTotalDeposits(accountNumber)));
+            statement.append(String.format("Total Withdrawals: $%,.2f%n", transactionManager.getTotalWithdrawals(accountNumber)));
+            statement.append(String.format("Total Received: $%,.2f%n", transactionManager.getTotalReceived(accountNumber)));
+            statement.append(String.format("Total Sent: $%,.2f%n", transactionManager.getTotalTranfer(accountNumber)));
             statement.append(String.format("Net Change: %s$%,.2f%n",
                     netChange >= 0 ? "+" : "-",
                     Math.abs(netChange)));
@@ -85,46 +85,7 @@ public class StatementGenerator {
         return statement.toString();
     }
 
-    private List<Transaction> sortTransactionsByTimestampDesc(List<Transaction> transactions) {
-        List<Transaction> sortedTransactions = new ArrayList<>(transactions);
-        sortedTransactions.sort((t1, t2) -> t2.getTimestamp().compareTo(t1.getTimestamp()));
-        return sortedTransactions;
-    }
 
-    private boolean isCreditTransaction(Transaction transaction) {
-        String type = transaction.getType();
-        return "DEPOSIT".equalsIgnoreCase(type) || "RECEIVE".equalsIgnoreCase(type);
-    }
 
-    private StatementTotals calculateTotals(List<Transaction> transactions) {
-        StatementTotals totals = new StatementTotals();
-        for (Transaction transaction : transactions) {
-            if (transaction == null) {
-                continue;
-            }
-            String type = transaction.getType();
-            double amount = transaction.getAmount();
-            if ("DEPOSIT".equalsIgnoreCase(type)) {
-                totals.totalDeposits += amount;
-            } else if ("WITHDRAWAL".equalsIgnoreCase(type)) {
-                totals.totalWithdrawals += amount;
-            } else if ("RECEIVE".equalsIgnoreCase(type)) {
-                totals.totalReceived += amount;
-            } else if ("TRANSFER".equalsIgnoreCase(type)) {
-                totals.totalSent += amount;
-            }
-        }
-        return totals;
-    }
 
-    private String formatAmount(double amount) {
-        return String.format("%.2f", amount);
-    }
-
-    private static final class StatementTotals {
-        private double totalDeposits;
-        private double totalWithdrawals;
-        private double totalReceived;
-        private double totalSent;
-    }
 }

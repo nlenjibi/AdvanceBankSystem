@@ -127,7 +127,7 @@ public class ConsoleUtil {
     }
 
     public static void printf(String format, Object ... args) {
-        printf(format, args);
+        System.out.printf(format, args);
     }
     // a custom print method to displace text to the console
     public static void pr(Object text) {

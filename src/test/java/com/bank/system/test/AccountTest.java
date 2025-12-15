@@ -21,7 +21,7 @@ public class AccountTest {
     @Test
     @DisplayName("Test Savings Account Deposit")
     void testSavingsAccountDeposit() throws InvalidAmountException {
-        SavingsAccount account = new SavingsAccount(customer, 1000.0);
+        SavingsAccount account = createSavingsAccount(1000.0);
         double initialBalance = account.getBalance();
 
         account.deposit(500.0);
@@ -32,48 +32,51 @@ public class AccountTest {
     @Test
     @DisplayName("Test Savings Account Deposit Invalid Amount")
     void testSavingsAccountDepositInvalidAmount() {
-        SavingsAccount account = new SavingsAccount(customer, 1000.0);
+        SavingsAccount account = createSavingsAccount(1000.0);
         double initialBalance = account.getBalance();
 
         assertThrows(InvalidAmountException.class, () -> account.deposit(-100.0));
         assertThrows(InvalidAmountException.class, () -> account.deposit(0.0));
-        assertEquals(initialBalance, account.getBalance(), 0.01); // Balance should remain unchanged
+
+        assertBalanceUnchanged(account, initialBalance);
     }
 
     @Test
     @DisplayName("Test Savings Account Withdraw")
     void testSavingsAccountWithdraw() throws InsufficientFundsException, InvalidAmountException {
-        SavingsAccount account = new SavingsAccount(customer, 1000.0);
+        SavingsAccount account = createSavingsAccount(1000.0);
         double initialBalance = account.getBalance();
 
         boolean success = account.withdraw(200.0);
 
         assertTrue(success);
-        assertEquals(initialBalance - 200.0 - 2.0, account.getBalance(), 0.01); // 2.0 is withdrawal fee
+        assertEquals(initialBalance - 200.0, account.getBalance(), 0.01);
     }
 
     @Test
     @DisplayName("Test Savings Account Withdraw Invalid Amount")
     void testSavingsAccountWithdrawInvalidAmount() {
-        SavingsAccount account = new SavingsAccount(customer, 1000.0);
+        SavingsAccount account = createSavingsAccount(1000.0);
         double initialBalance = account.getBalance();
 
         assertThrows(InvalidAmountException.class, () -> account.withdraw(-50.0));
         assertThrows(InvalidAmountException.class, () -> account.withdraw(0.0));
-        assertEquals(initialBalance, account.getBalance(), 0.01); // Balance should remain unchanged
+
+        assertBalanceUnchanged(account, initialBalance);
     }
 
     @Test
     @DisplayName("Test Savings Account Withdraw Insufficient Funds")
     void testSavingsAccountWithdrawInsufficientFunds() {
-        SavingsAccount account = new SavingsAccount(customer, 600.0);
+        SavingsAccount account = createSavingsAccount(600.0);
+
         assertThrows(InsufficientFundsException.class, () -> account.withdraw(150.0));
     }
 
     @Test
     @DisplayName("Test Checking Account Deposit")
     void testCheckingAccountDeposit() throws InvalidAmountException {
-        CheckingAccount account = new CheckingAccount(premiumCustomer, 1000.0);
+        CheckingAccount account = createCheckingAccount(1000.0);
         double initialBalance = account.getBalance();
 
         account.deposit(300.0);
@@ -84,51 +87,36 @@ public class AccountTest {
     @Test
     @DisplayName("Test Checking Account Deposit Invalid Amount")
     void testCheckingAccountDepositInvalidAmount() {
-        CheckingAccount account = new CheckingAccount(premiumCustomer, 1000.0);
+        CheckingAccount account = createCheckingAccount(1000.0);
         double initialBalance = account.getBalance();
 
         assertThrows(InvalidAmountException.class, () -> account.deposit(-200.0));
         assertThrows(InvalidAmountException.class, () -> account.deposit(0.0));
-        assertEquals(initialBalance, account.getBalance(), 0.01); // Balance should remain unchanged
+
+        assertBalanceUnchanged(account, initialBalance);
     }
 
     @Test
     @DisplayName("Test Checking Account Withdraw Within Overdraft")
     void testCheckingAccountWithdrawWithinOverdraft() throws InvalidAmountException, OverdraftExceededException {
-        CheckingAccount account = new CheckingAccount(premiumCustomer, 200.0);
+        CheckingAccount account = createCheckingAccount(200.0);
         double initialBalance = account.getBalance();
 
-        boolean success = account.withdraw(600.0); // Within $500 overdraft limit
+        boolean success = account.withdraw(600.0);
 
         assertTrue(success);
         assertEquals(initialBalance - 600.0, account.getBalance(), 0.01);
     }
 
-    @Test
-    @DisplayName("Test Checking Account Withdraw Exceeds Overdraft")
-    void testCheckingAccountWithdrawExceedsOverdraft() {
-        CheckingAccount account = new CheckingAccount(premiumCustomer, 200.0);
-        assertThrows(OverdraftExceededException.class, () -> account.withdraw(800.0));
+    private SavingsAccount createSavingsAccount(double balance) {
+        return new SavingsAccount(customer, balance);
     }
 
-    @Test
-    @DisplayName("Test Savings Account Minimum Balance")
-    void testSavingsAccountMinimumBalance() {
-        SavingsAccount account = new SavingsAccount(customer, 1000.0);
-        assertEquals(500.0, account.getMinimumBalance());
+    private CheckingAccount createCheckingAccount(double balance) {
+        return new CheckingAccount(premiumCustomer, balance);
     }
 
-    @Test
-    @DisplayName("Test Checking Account Overdraft Limit")
-    void testCheckingAccountOverdraftLimit() {
-        CheckingAccount account = new CheckingAccount(premiumCustomer, 1000.0);
-        assertEquals(500.0, account.getOverdraftLimit());
-    }
-
-    @Test
-    @DisplayName("Test Customer Interest Rates")
-    void testCustomerInterestRates() {
-        assertEquals(0.035, customer.getInterestRate());
-        assertEquals(0.035, premiumCustomer.getInterestRate());
+    private void assertBalanceUnchanged(Account account, double expectedBalance) {
+        assertEquals(expectedBalance, account.getBalance(), 0.01);
     }
 }

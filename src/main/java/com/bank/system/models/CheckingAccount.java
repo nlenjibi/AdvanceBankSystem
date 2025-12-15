@@ -11,9 +11,11 @@ public class CheckingAccount extends Account {
     private static final double OVERDRAFT_LIMIT = 500.0;
     private static final double MONTHLY_FEE = 10.0 ;
 
-
-    public CheckingAccount(Customer customer, double initialBalance) {
-        super(customer, initialBalance);
+    public CheckingAccount(Customer customer, double initialDeposit) {
+        this(generateAccountNumber(), customer, initialDeposit);
+    }
+    public CheckingAccount(String accountNumber, Customer customer, double initialBalance) {
+        super(accountNumber, customer, initialBalance);
 
     }
 

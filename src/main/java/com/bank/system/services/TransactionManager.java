@@ -8,9 +8,7 @@ import com.bank.system.models.Transaction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
 import java.util.stream.Collectors;
-
 
 public class TransactionManager {
     private final List<Transaction> allTransactions;
@@ -21,12 +19,16 @@ public class TransactionManager {
         this.allTransactions = Collections.synchronizedList(new ArrayList<>());
     }
 
+
+
     public void addTransaction(Transaction transaction) {
         if (transaction == null) {
             return;
         }
+
         allTransactions.add(transaction);
     }
+
 
     public int getTransactionCount() {
         return allTransactions.size();
@@ -52,46 +54,46 @@ public class TransactionManager {
         return success;
     }
 
-   public boolean transfer(String fromAccountNumber, String toAccountNumber, double amount)
-        throws InvalidAmountException {
-    if (fromAccountNumber == null || toAccountNumber == null) {
-        throw new IllegalArgumentException("Account numbers must not be null");
-    }
-    if (fromAccountNumber.equals(toAccountNumber)) {
-        throw new IllegalArgumentException("Cannot transfer to the same account");
-    }
+    public boolean transfer(String fromAccountNumber, String toAccountNumber, double amount)
+            throws InvalidAmountException {
+        if (fromAccountNumber == null || toAccountNumber == null) {
+            throw new IllegalArgumentException("Account numbers must not be null");
+        }
+        if (fromAccountNumber.equals(toAccountNumber)) {
+            throw new IllegalArgumentException("Cannot transfer to the same account");
+        }
 
-    validateAmount(amount, "Transfer");
-    Account fromAccount = fetchAccount(fromAccountNumber);
-    Account toAccount = fetchAccount(toAccountNumber);
+        validateAmount(amount, "Transfer");
+        Account fromAccount = fetchAccount(fromAccountNumber);
+        Account toAccount = fetchAccount(toAccountNumber);
 
-    Account firstLock = fromAccount;
-    Account secondLock = toAccount;
-    if (fromAccount.getAccountNumber().compareTo(toAccount.getAccountNumber()) > 0) {
-        firstLock = toAccount;
-        secondLock = fromAccount;
-    }
+        Account firstLock = fromAccount;
+        Account secondLock = toAccount;
+        if (fromAccount.getAccountNumber().compareTo(toAccount.getAccountNumber()) > 0) {
+            firstLock = toAccount;
+            secondLock = fromAccount;
+        }
 
-    synchronized (firstLock) {
-        synchronized (secondLock) {
-            boolean withdrawalSuccess = fromAccount.processTransaction(amount, TransactionType.WITHDRAWAL);
-            if (!withdrawalSuccess) {
-                return false;
+        synchronized (firstLock) {
+            synchronized (secondLock) {
+                boolean withdrawalSuccess = fromAccount.processTransaction(amount, TransactionType.WITHDRAWAL);
+                if (!withdrawalSuccess) {
+                    return false;
+                }
+
+                boolean depositSuccess = toAccount.processTransaction(amount, TransactionType.DEPOSIT);
+                if (!depositSuccess) {
+                    fromAccount.processTransaction(amount, TransactionType.DEPOSIT);
+                    return false;
+                }
+
+                recordTransaction(fromAccount, TransactionType.TRANSFER, amount);
+                recordTransaction(toAccount, TransactionType.RECEIVE, amount);
+                return true;
             }
-
-            boolean depositSuccess = toAccount.processTransaction(amount, TransactionType.DEPOSIT);
-            if (!depositSuccess) {
-                // rollback withdrawal
-                fromAccount.processTransaction(amount, TransactionType.DEPOSIT);
-                return false;
-            }
-
-            recordTransaction(fromAccount, TransactionType.TRANSFER, amount);
-            recordTransaction(toAccount, TransactionType.RECEIVE, amount);
-            return true;
         }
     }
-}
+
     public List<Transaction> getTransactionsForAccount(String accountNumber) {
         return allTransactions.stream()
                 .filter(t -> isMatchingAccount(t, accountNumber))
@@ -137,38 +139,43 @@ public class TransactionManager {
         return new Transaction(accountNumber, type.name(), amount, balanceAfter);
     }
 
-    public List<Transaction> getTransactionsByAccount(String accountNumber) {
-        return getTransactionsForAccount(accountNumber);
-    }
-
-    public List<Transaction> getTransactionsByType(String type) {
+    public double getTotalDeposits(String accountNumber) {
+        if (accountNumber == null) {
+            return 0.0;
+        }
         return allTransactions.stream()
-                .filter(t -> t.getType().equalsIgnoreCase(type))
-                .collect(Collectors.toList());
-    }
-
-    public List<Transaction> getTransactionsSortedByAmount() {
-        return allTransactions.stream()
-                .sorted((t1, t2) -> Double.compare(t2.getAmount(), t1.getAmount()))
-                .collect(Collectors.toList());
-    }
-
-    public List<Transaction> getTransactionsSortedByDate() {
-        return allTransactions.stream()
-                .sorted((t1, t2) -> t2.getTimestamp().compareTo(t1.getTimestamp()))
-                .collect(Collectors.toList());
-    }
-
-    public double getTotalDeposits() {
-        return allTransactions.stream()
-                .filter(t -> "DEPOSIT".equals(t.getType()) || "RECEIVE".equals(t.getType()))
+                .filter(t -> isMatchingAccount(t, accountNumber))
+                .filter(t -> "DEPOSIT".equalsIgnoreCase(t.getType()) )
                 .mapToDouble(Transaction::getAmount)
                 .sum();
     }
-
-    public double getTotalWithdrawals() {
+    public double getTotalReceived(String accountNumber) {
+        if (accountNumber == null) {
+            return 0.0;
+        }
         return allTransactions.stream()
-                .filter(t -> "WITHDRAWAL".equals(t.getType()) || "TRANSFER".equals(t.getType()))
+                .filter(t -> isMatchingAccount(t, accountNumber))
+                .filter(t -> "RECEIVE".equalsIgnoreCase(t.getType()) )
+                .mapToDouble(Transaction::getAmount)
+                .sum();
+    }
+  public double getTotalWithdrawals(String accountNumber) {
+      if (accountNumber == null) {
+          return 0.0;
+      }
+      return allTransactions.stream()
+              .filter(t -> isMatchingAccount(t, accountNumber))
+              .filter(t -> "WITHDRAWAL".equalsIgnoreCase(t.getType()) || "TRANSFER".equalsIgnoreCase(t.getType()))
+              .mapToDouble(Transaction::getAmount)
+              .sum();
+  }
+    public double getTotalTranfer(String accountNumber) {
+        if (accountNumber == null) {
+            return 0.0;
+        }
+        return allTransactions.stream()
+                .filter(t -> isMatchingAccount(t, accountNumber))
+                .filter(t -> "TRANSFER".equalsIgnoreCase(t.getType()))
                 .mapToDouble(Transaction::getAmount)
                 .sum();
     }
@@ -195,5 +202,22 @@ public class TransactionManager {
             }
         }
     }
-}
+    public List<Transaction> sortTransactionsByTimestampDesc(List<Transaction> transactions) {
+        if (transactions == null || transactions.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return transactions.stream()
+                .sorted(java.util.Comparator.comparing(Transaction::getTimestamp,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .reversed())
+                .collect(Collectors.toList());
+    }
 
+    public boolean isCreditTransaction(Transaction transaction) {
+        if (transaction == null) {
+            return false;
+        }
+        String type = transaction.getType();
+        return type != null && ("DEPOSIT".equalsIgnoreCase(type) || "RECEIVE".equalsIgnoreCase(type));
+    }
+}

@@ -13,24 +13,39 @@ public class Transaction {
     private final String type; // "DEPOSIT" or "WITHDRAWAL"
     private final double amount;
     private final double balanceAfter;
-    private final String timestamp;
+    private String timestamp;
     private static final AtomicInteger TRANSACTION_COUNTER = new AtomicInteger(0);
     private static final DateTimeFormatter TIMESTAMP_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy hh:mm a");
 
     public Transaction(String accountNumber, String type, double amount, double balanceAfter) {
+        this(generateTransactionId(), accountNumber, type, amount, balanceAfter, getCurrentTimestamp());
+    }
+
+    public Transaction(String transactionId, String accountNumber, String type, double amount, double balanceAfter, String timestamp) {
+        this.transactionId = transactionId;
         this.accountNumber = accountNumber;
         this.type = type;
         this.amount = amount;
         this.balanceAfter = balanceAfter;
-        this.transactionId = generateTransactionId();
-        this.timestamp = getCurrentTimestamp();
+        this.timestamp = timestamp;
+        syncTransactionCounter(transactionId);
     }
 
-    private String generateTransactionId() {
+    private static String generateTransactionId() {
         return String.format("TXN%03d", TRANSACTION_COUNTER.incrementAndGet());
     }
 
-    private String getCurrentTimestamp() {
+    private static void syncTransactionCounter(String transactionId) {
+        if (transactionId != null && transactionId.startsWith("TXN")) {
+            try {
+                int value = Integer.parseInt(transactionId.substring(3));
+                TRANSACTION_COUNTER.updateAndGet(current -> Math.max(current, value));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+
+    private static String getCurrentTimestamp() {
         return LocalDateTime.now().format(TIMESTAMP_FORMATTER);
     }
 
@@ -74,8 +89,9 @@ public class Transaction {
         return timestamp;
     }
 
-    public static int getTransactionCounter() {
-        return TRANSACTION_COUNTER.get();
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 
 

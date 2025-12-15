@@ -5,29 +5,37 @@ import com.bank.system.exceptions.InvalidAmountException;
 import com.bank.system.exceptions.OverdraftExceededException;
 import com.bank.system.interfaces.Transactable;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 
 public abstract class Account implements Transactable {
-    private final String accountNumber;
+    private String accountNumber;
     private final Customer customer;
     private double balance;
     private final String status;
 
     private static final AtomicInteger ACCOUNT_COUNTER = new AtomicInteger(0);
 
-    protected Account(Customer customer, double initialDeposit) {
+
+    protected Account(String accountNumber, Customer customer, double initialDeposit) {
         this.customer = customer;
         this.balance = initialDeposit;
         this.status = "Active";
-        this.accountNumber = generateAccountNumber();
+        this.accountNumber = accountNumber;
+        syncAccountCounter(accountNumber);
 
     }
-
-    private static String generateAccountNumber() {
+    private static void syncAccountCounter(String accountNumber) {
+        if (accountNumber != null && accountNumber.startsWith("ACC")) {
+            try {
+                int value = Integer.parseInt(accountNumber.substring(3));
+                ACCOUNT_COUNTER.updateAndGet(current -> Math.max(current, value));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+    }
+    protected static String generateAccountNumber() {
         return String.format("ACC%03d", ACCOUNT_COUNTER.incrementAndGet());
     }
 
@@ -42,18 +50,25 @@ public abstract class Account implements Transactable {
     public abstract boolean withdraw(double amount) throws InsufficientFundsException, InvalidAmountException, OverdraftExceededException;
 
     public boolean deposit(double amount) throws InvalidAmountException {
-
-        if (amount <= 0) {
-            throw new InvalidAmountException("Deposit amount must be greater than 0");
-        }
+        ensurePositiveAmount(amount, "Deposit");
         setBalance(getBalance() + amount);
         return true;
+    }
+
+    protected final void ensurePositiveAmount(double amount, String context) throws InvalidAmountException {
+        if (amount <= 0) {
+            throw new InvalidAmountException(context + " amount must be greater than 0");
+        }
     }
     // Withdraw method - to be overridden by subclasses
 
     // Getters and setters
     public String getAccountNumber() {
         return accountNumber;
+    }
+    public void setAccountNumber(String accountNumber) {
+        this.accountNumber = accountNumber;
+
     }
 
     public Customer getCustomer() {
@@ -92,6 +107,10 @@ public abstract class Account implements Transactable {
         } catch (InvalidAmountException | InsufficientFundsException | OverdraftExceededException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public boolean isActive() {
+        return status.equals("Active");
     }
 
     @FunctionalInterface
