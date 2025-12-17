@@ -94,11 +94,19 @@ public class FilePersistence {
      * Loads accounts from the accounts file
      */
     public Map<String, Account> loadAccounts() {
-        Map<String, Account> accounts = new HashMap<>();
+        return loadAccounts(new HashMap<>());
+    }
+
+    public Map<String, Account> loadAccounts(Map<String, Account> existingAccounts) {
+        Map<String, Account> accounts = new HashMap<>(existingAccounts);
         Path path = Paths.get(ACCOUNTS_FILE);
 
         if (!Files.exists(path)) {
-           print("Accounts file does not exist. Starting with empty accounts.");
+            if (existingAccounts.isEmpty()) {
+                print("Accounts file does not exist. Starting with empty accounts.");
+            } else {
+                print("Accounts file does not exist. Retaining existing accounts.");
+            }
             return accounts;
         }
 
@@ -106,7 +114,8 @@ public class FilePersistence {
             List<String> lines = Files.readAllLines(path);
             print("Loading account data from files...");
 
-            Set<String> seenAccountNumbers = new HashSet<>();
+            Set<String> seenAccountNumbers = new HashSet<>(accounts.keySet());
+            int loadedCount = 0;
             for (String line : lines) {
                 Optional<Account> accountOpt = deserializeAccount(line);
                 if (accountOpt.isEmpty()) {
@@ -118,9 +127,10 @@ public class FilePersistence {
                     continue;
                 }
                 accounts.put(account.getAccountNumber(), account);
+                loadedCount++;
             }
 
-            print("✓ " + accounts.size() + " accounts loaded successfully from " + ACCOUNTS_FILE);
+            print("✓ " + loadedCount + " accounts loaded successfully from " + ACCOUNTS_FILE);
         } catch (IOException e) {
             print("Error loading accounts: " + e.getMessage());
         } catch (Exception e) {
@@ -134,7 +144,13 @@ public class FilePersistence {
      * Loads transactions from the transactions file
      */
     public List<Transaction> loadTransactions() {
-        List<Transaction> transactions = new ArrayList<>();
+        return loadTransactions(Collections.emptyList());
+    }
+
+    public List<Transaction> loadTransactions(List<Transaction> existingTransactions) {
+        List<Transaction> transactions = existingTransactions == null
+                ? new ArrayList<>()
+                : new ArrayList<>(existingTransactions);
         Path path = Paths.get(TRANSACTIONS_FILE);
 
         if (!Files.exists(path)) {
@@ -146,6 +162,11 @@ public class FilePersistence {
             List<String> lines = Files.readAllLines(path);
 
             Set<String> seenTransactionIds = new HashSet<>();
+            for (Transaction tx : transactions) {
+                seenTransactionIds.add(tx.getTransactionId());
+            }
+
+            int loadedCount = 0;
             for (String line : lines) {
                 Optional<Transaction> transactionOpt = deserializeTransaction(line);
                 if (transactionOpt.isEmpty()) {
@@ -157,9 +178,10 @@ public class FilePersistence {
                     continue;
                 }
                 transactions.add(transaction);
+                loadedCount++;
             }
 
-            print("✓ " + transactions.size() + " transactions loaded from " + TRANSACTIONS_FILE);
+            print("✓ " + loadedCount + " new transactions loaded from " + TRANSACTIONS_FILE);
         } catch (IOException e) {
             print("Error loading transactions: " + e.getMessage());
         } catch (Exception e) {

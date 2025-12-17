@@ -54,7 +54,7 @@ public class Main {
         boolean running = true;
         while (running) {
             displayMainMenu();
-            int choice = getValidIntInput("Enter your choice: ", 1, 6);
+            int choice = getValidIntInput("Enter your choice: ", 1, 7);
             running = processMenuChoice(choice);
         }
         shutdown();
@@ -293,6 +293,7 @@ public class Main {
     }
     private static void saveLoadData() {
         boolean backToMain = false;
+
         while (!backToMain) {
             print("\n--- Save/Load Data ---");
             print("1. Save All Data to Files");
