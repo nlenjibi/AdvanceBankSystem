@@ -19,6 +19,7 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import com.bank.system.services.FilePersistence;
 
 import java.io.PrintWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -306,7 +307,7 @@ public class Main {
                     saveDataToFiles();
                     break;
                 case 2:
-                    loadDataFromFiles();
+                    loadDataFromFiles(accountManager.getAccountsMap(), transactionManager.getAllTransactions());
                     break;
                 case 3:
                     backToMain = true;
@@ -322,7 +323,7 @@ public class Main {
 
         if (loadedAccounts != null && !loadedAccounts.isEmpty()) {
             accountManager.getAccountsMap().putAll(loadedAccounts);
-            print("Loaded " + loadedAccounts.size() + " accounts.");
+
         } else {
             print("No account data found to load.");
         }
@@ -330,7 +331,27 @@ public class Main {
         List<Transaction> loadedTransactions = filePersistence.loadTransactions();
         if (loadedTransactions != null && !loadedTransactions.isEmpty()) {
             transactionManager.setTransactions(loadedTransactions);
-            print("Loaded " + loadedTransactions.size() + " transactions.");
+
+        } else {
+            print("No transactions found to load.");
+        }
+        pressEnterToContinue();
+    }
+    private static void loadDataFromFiles(Map<String, Account> existingAccounts, List<Transaction> existingTransactions) {
+
+        Map<String, Account> loadedAccounts = filePersistence.loadAccounts(existingAccounts);
+
+        if (loadedAccounts != null && !loadedAccounts.isEmpty()) {
+            accountManager.getAccountsMap().putAll(loadedAccounts);
+
+        } else {
+            print("No account data found to load.");
+        }
+
+        List<Transaction> loadedTransactions = filePersistence.loadTransactions(existingTransactions);
+        if (loadedTransactions != null && !loadedTransactions.isEmpty()) {
+            transactionManager.setTransactions(loadedTransactions);
+
         } else {
             print("No transactions found to load.");
         }

@@ -181,7 +181,7 @@ public class FilePersistence {
                 loadedCount++;
             }
 
-            print("✓ " + loadedCount + " new transactions loaded from " + TRANSACTIONS_FILE);
+            print("✓ " + loadedCount + " new transactions loaded successfully from " + TRANSACTIONS_FILE);
         } catch (IOException e) {
             print("Error loading transactions: " + e.getMessage());
         } catch (Exception e) {

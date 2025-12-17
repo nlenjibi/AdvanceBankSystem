@@ -220,4 +220,6 @@ public class TransactionManager {
         String type = transaction.getType();
         return type != null && ("DEPOSIT".equalsIgnoreCase(type) || "RECEIVE".equalsIgnoreCase(type));
     }
+
+
 }
