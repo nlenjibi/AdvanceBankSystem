@@ -47,9 +47,9 @@ public abstract class Account implements Transactable {
 
 
     // Abstract methods to be implemented by subclasses
-    public abstract boolean withdraw(double amount) throws InsufficientFundsException, InvalidAmountException, OverdraftExceededException;
+    public  abstract  boolean withdraw(double amount) throws InsufficientFundsException, InvalidAmountException, OverdraftExceededException;
 
-    public boolean deposit(double amount) throws InvalidAmountException {
+    public synchronized boolean deposit(double amount) throws InvalidAmountException {
         ensurePositiveAmount(amount, "Deposit");
         setBalance(getBalance() + amount);
         return true;

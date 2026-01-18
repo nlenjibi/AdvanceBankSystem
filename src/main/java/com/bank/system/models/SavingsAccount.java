@@ -38,7 +38,7 @@ public class SavingsAccount extends Account  {
     }
 
     @Override
-    public boolean withdraw(double amount) throws InvalidAmountException, InsufficientFundsException {
+    public synchronized boolean withdraw(double amount) throws InvalidAmountException, InsufficientFundsException {
         ensurePositiveAmount(amount, "Withdrawal");
 
         double withdrawalTotal = amount ;

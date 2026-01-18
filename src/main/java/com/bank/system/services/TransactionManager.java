@@ -34,7 +34,7 @@ public class TransactionManager {
         return allTransactions.size();
     }
 
-    public synchronized boolean deposit(String accountNumber, double amount) throws InvalidAmountException {
+    public  boolean deposit(String accountNumber, double amount) throws InvalidAmountException {
         Account account = fetchAccount(accountNumber);
         validateAmount(amount, "Deposit");
         boolean success = account.processTransaction(amount, TransactionType.DEPOSIT);
@@ -44,7 +44,7 @@ public class TransactionManager {
         return success;
     }
 
-    public synchronized boolean withdraw(String accountNumber, double amount) throws InvalidAmountException {
+    public  boolean withdraw(String accountNumber, double amount) throws InvalidAmountException {
         Account account = fetchAccount(accountNumber);
         validateAmount(amount, "Withdrawal");
         boolean success = account.processTransaction(amount, TransactionType.WITHDRAWAL);

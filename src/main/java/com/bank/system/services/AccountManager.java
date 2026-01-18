@@ -6,6 +6,7 @@ import com.bank.system.models.Customer;
 import com.bank.system.models.SavingsAccount;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -20,7 +21,7 @@ public class AccountManager {
     private int nextAccountId = 1;
 
     public AccountManager() {
-        this.accounts = new ConcurrentHashMap<>();
+        this.accounts = new HashMap<>();
     }
 
     // Method to add an account
@@ -46,11 +47,7 @@ public class AccountManager {
     /**
      * Gets the total balance across all accounts
      */
-    public double getTotalBalance() {
-        return accounts.values().stream()
-                .mapToDouble(Account::getBalance)
-                .sum();
-    }
+
 
     public Account getAccount(String accountNumber) {
         return accounts.get(accountNumber);
@@ -65,16 +62,6 @@ public class AccountManager {
         return accounts.remove(accountNumber) != null;
     }
 
-    public List<Account> searchAccounts(Predicate<Account> condition) {
-        return accounts.values().stream()
-                .filter(condition)
-                .collect(Collectors.toList());
-    }
-
-
-    public int getTotalAccounts() {
-        return accounts.size();
-    }
 
 
     public void displayAccountDetails(Account account) {
@@ -91,18 +78,6 @@ public class AccountManager {
         printf("Current Balance: $%,.2f%n", account.getBalance());
     }
 
-    /**
-     * Gets the average account balance
-     */
-    public double getAverageBalance() {
-        if (accounts.isEmpty()) {
-            return 0.0;
-        }
-        return accounts.values().stream()
-                .mapToDouble(Account::getBalance)
-                .average()
-                .orElse(0.0);
-    }
 
     /**
      * Gets accounts sorted by balance (descending)
@@ -126,7 +101,7 @@ public class AccountManager {
                     }
                     return false;
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**

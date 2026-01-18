@@ -25,17 +25,12 @@ public class FilePersistence {
     public void saveAccounts(Map<String, Account> accounts) {
         Path path = Paths.get(ACCOUNTS_FILE);
 
-        // Ensure parent directory exists
-        try {
+        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             if (path.getParent() != null) {
                 Files.createDirectories(path.getParent());
+            }else {
+                print("Error creating directories for " + ACCOUNTS_FILE + " failed ");
             }
-        } catch (IOException e) {
-            print("Error creating directories for " + ACCOUNTS_FILE + ": " + e.getMessage());
-            return;
-        }
-
-        try (BufferedWriter writer = Files.newBufferedWriter(path)) {
             List<Account> sorted = new ArrayList<>(accounts.values());
             sorted.sort(Comparator.comparing(Account::getAccountNumber));
 
@@ -61,17 +56,12 @@ public class FilePersistence {
    public void saveTransactions(List<Transaction> transactions) {
        Path path = Paths.get(TRANSACTIONS_FILE);
 
-       // Ensure parent directory exists
-       try {
+       try (BufferedWriter writer = Files.newBufferedWriter(path)) {
            if (path.getParent() != null) {
                Files.createDirectories(path.getParent());
+           }else {
+               print("Error creating directories for " + TRANSACTIONS_FILE + " failed" );
            }
-       } catch (IOException e) {
-           print("Error creating directories for " + TRANSACTIONS_FILE + ": " + e.getMessage());
-           return;
-       }
-
-       try (BufferedWriter writer = Files.newBufferedWriter(path)) {
            List<Transaction> sorted = new ArrayList<>(transactions);
            sorted.sort(Comparator.comparing(Transaction::getTransactionId));
 
